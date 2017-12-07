@@ -1,0 +1,60 @@
+---
+swagger: "2.0"
+info:
+  description: "A REST API for Iperf 3"
+  version: "0.0.0"
+  title: "Iperfidy"
+  termsOfService: "Use at your own risk"
+  contact:
+    url: "http://necromuralist.github.com"
+    email: "necromuralist@gmail.com"
+  license:
+    name: "MIT"
+    url: "http://opensource.org/licenses/MIT"
+
+paths:
+  /server/{uuid}:
+    get:
+      tags:
+      - "Server"
+      summary: "Get the current state of the server"
+      operationId: "get_server_state"
+      parameters:
+        - $ref: '#/parameters/uuid'
+      responses:
+        200:
+          description: "Return the server state."
+          schema:
+            $ref: "#/definitions/ServerState"
+
+        404:
+          description: "Job Not Found"
+          schema:
+            $ref: "#/definitions/Message"
+
+      x-swagger-router-controller: "iperfidy.server.api"
+
+parameters:
+  uuid:
+    name: uuid
+    description: Job Identifier for the Iperf Service.
+    in: path
+    type: string
+    required: true
+    
+definitions:
+  ServerState:
+    type: object
+    properties:
+      state:
+        type: string
+        example: "Not Running"
+        description: "The state of the iperf server"
+
+  Message:
+    type: object
+    properties:
+      message:
+        type: string
+        example: "Job not found: 442E6"
+        description: An error message
