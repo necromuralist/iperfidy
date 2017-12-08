@@ -1,9 +1,6 @@
 """the server WSGI thing"""
-import connexion
-
-
-application = connexion.FlaskApp(__name__)
-application.add_api("swagger.yaml")
+# this project
+from iperfidy.server.api import application
 
 if __name__ == "__main__":
     application.run()

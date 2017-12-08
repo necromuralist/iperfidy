@@ -37,6 +37,7 @@ class BaseSettings(ABC):
         self.settings = settings
         self.log_path = log_path
         self._schema = None
+        self._settings_map = None
         self._log = None
         return
 
@@ -67,6 +68,17 @@ class BaseSettings(ABC):
         """Schema to validate the settings"""
         return
 
+    @abstractproperty
+    def settings_map(self):
+        """dict to map the iperf options to the iperf3-python attributes
+
+        Note:
+         For some reason the iperf3-python code uses names that don't match
+         the iperf command-line options (sometimes) to make it easier for the
+         user the JSON should use the iperf3 option-names and this will map 
+         them to the iperf3-python object attributes
+        """
+
     def validate(self):
         """validates the JSON
 
@@ -80,3 +92,16 @@ class BaseSettings(ABC):
             raise InvalidSettings("bad settings {}".format(error))
         return
     
+    def __call__(self, iperf):
+        """sets the settings on the iperf object
+
+        Args:
+         iperf: the server or client object to add the settings to
+
+        Raises:
+         InvalidServerSettings: bad entry in the JSON
+        """
+        self.validate()
+        for key, value in self.settings.items():
+            setattr(iperf, self.settings_map[key], value)
+        return

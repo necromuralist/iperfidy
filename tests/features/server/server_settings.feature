@@ -9,3 +9,9 @@ Scenario: An invalid JSON settings is validated
   Given a Server Settings with invalid JSON
   When the invalid JSON is validate
   Then it raises an InvalidServerSettings error
+
+Scenario: An iperf object is passed to the settings
+  Given a Server Settings with valid JSON
+  When the Settings object is passed an iperf object
+  Then it validates the settings
+  And transfers the settings to the iperf object
