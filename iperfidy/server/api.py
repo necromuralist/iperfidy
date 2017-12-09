@@ -3,6 +3,7 @@
 from http import HTTPStatus
 
 # pypi
+from flask import url_for
 from redis import Redis
 import connexion
 
@@ -11,6 +12,8 @@ from .celeriac import (
     make_celery,
     CeleryStates,
     )
+
+from iperfidy.server.session import ServerSession
 
 redis = Redis()
 
@@ -21,6 +24,7 @@ class ServerKeys:
     """holder of string constants"""
     message = "message"
     state = "state"
+    ready = "ready"
 
 application = connexion.FlaskApp(__name__)
 app = application.create_app()
@@ -33,10 +37,29 @@ app.config.update(
 
 celery = make_celery(app)
 
-@celery.task(bind=True)
-def start_server(self):
-    """adds the server start to celery's queue"""
+# ******************** Celery Jobs ******************** #
 
+@celery.task(bind=True)
+def start_server(self, parameters): # pragma: no cover
+    """adds the server start to celery's queue
+
+    Args:
+     parameters(dict): The POST JSON parameters
+    """
+    self.update_state(state=CeleryStates.started)
+    session = ServerSession(parameters)
+    return session()
+# ******************** The API Functions ******************** #
+
+
+def queue_server(server_settings):
+    """Queues up the iperf server as a celery job
+
+    Args
+     server_settings (dict): any server settings
+    """
+    job = start_server.delay(parameters=server_settings)
+    return {"location": "/server/{}".format(job.id)}, HTTPStatus.ACCEPTED
 
 
 def get_server_state(uuid):
@@ -52,7 +75,8 @@ def get_server_state(uuid):
         thing = start_server.AsyncResult(uuid)
         if thing.state != CeleryStates.failure:
             response = ({ServerKeys.message: "Job Found: {}".format(uuid),
-                         ServerKeys.state: thing.state})
+                         ServerKeys.state: thing.state,
+                         ServerKeys.ready: thing.ready()})
         else:
             response = ({ServerKeys.message: "Job failed: {}".format(uuid),
                         ServerKeys.state: thing.state}, HTTPStatus.BAD_REQUEST)

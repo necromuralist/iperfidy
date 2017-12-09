@@ -34,13 +34,35 @@ paths:
 
       x-swagger-router-controller: "iperfidy.server.api"
 
+  /server:
+    post:
+      tags:
+        - "Server"
+      summary: "Queue the server start-up."
+      operationId: "queue_server"
+      consumes:
+        - application/json
+      parameters:
+        - name: server_settings
+          in: body
+          schema:
+            $ref: '#/definitions/ServerSettings'
+      responses:
+        200:
+          description: "Server queued"
+          schema:
+            $ref: '#/definitions/Message'
+      x-swagger-router-controller: "iperfidy.server.api"            
+
+
 parameters:
   uuid:
     name: uuid
-    description: Job Identifier for the Iperf Service.
+    description: "Job Identifier for the Iperf Service."
     in: path
     type: string
     required: true
+
     
 definitions:
   ServerState:
@@ -57,4 +79,16 @@ definitions:
       message:
         type: string
         example: "Job not found: 442E6"
-        description: An error message
+        description: "A message"
+
+  ServerSettings:
+    type: object
+    properties:
+      bind: 
+        type: string
+      port:
+        type: integer
+        default: 5201
+      verbose:
+        type: boolean
+        

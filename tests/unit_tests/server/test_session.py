@@ -4,6 +4,11 @@
 from functools import partial
 
 # pypi
+import iperf3
+from expects import (
+    be_a,
+    expect,
+)
 from pytest_bdd import (
     given,
     then,
@@ -11,47 +16,48 @@ from pytest_bdd import (
 )
 import pytest_bdd
 
+# software under test
+from iperfidy.server.session import ServerSession
+from iperfidy.server.settings import ServerSettings
+
 # for testing
 from ..fixtures import context
 
+and_also = then
 scenario = partial(pytest_bdd.scenario,
                    '../../features/server/session.feature')
 
 
-@scenario('A server session is called')
-def test_a_server_session_is_called():
+@scenario('A server session is created')
+def test_a_server_session_is_created():
     return
 
 
-@given('valid settings and a built Server Session')
+@given('a server session')
 def valid_settings_and_a_built_server_session(context, faker):
     context.bind_address = faker.ipv4()
     context.port = faker.pyint()
-    context.verbose = faker.pybool()    
+    context.verbose = faker.pybool()
+    context.session = ServerSession(dict(bind=context.bind_address,
+                                        port=context.port,
+                                        verbose=context.verbose))
     return
 
 
-@when('the server session is called')
-def the_server_session_is_called():
-    """the server session is called."""
+@when('the attributes are retrieved')
+def the_server_session_is_called(context):
+    context.settings = context.session.settings
+    context.iperf = context.session.iperf
+    return
 
 
-@then('it adds the settings to the server')
-def it_adds_the_settings_to_the_server():
-    """it adds the settings to the server."""
+@then('the settings are server settings')
+def it_adds_the_settings_to_the_server(context):
+    expect(context.settings).to(be_a(ServerSettings))
+    return
 
 
-@then('it creates a server')
-def it_creates_a_server():
-    """it creates a server."""
-
-
-@then('it returns the JSON')
-def it_returns_the_json():
-    """it returns the JSON."""
-
-
-@then('it runs it')
-def it_runs_it():
-    """it runs it."""
-
+@and_also('the iperf attribute is a server')
+def it_creates_a_server(context):
+    expect(context.iperf).to(be_a(iperf3.Server))
+    return

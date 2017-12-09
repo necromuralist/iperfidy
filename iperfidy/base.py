@@ -2,7 +2,7 @@
 
 # python standard library
 from abc import (
-    abstractproperty,
+    abstractmethod,
     ABC,
     )
 import logging
@@ -63,12 +63,12 @@ class BaseSettings(ABC):
             self._log.addHandler
         return self._log    
 
-    @abstractproperty
+    @abstractmethod
     def schema(self):
         """Schema to validate the settings"""
-        return
+        return  # pragma: no cover
 
-    @abstractproperty
+    @abstractmethod
     def settings_map(self):
         """dict to map the iperf options to the iperf3-python attributes
 
@@ -105,3 +105,60 @@ class BaseSettings(ABC):
         for key, value in self.settings.items():
             setattr(iperf, self.settings_map[key], value)
         return
+
+# ******************** IperfSession ******************** #
+
+
+class IperfSession(ABC):
+    """A Base Class to run the iperf session
+
+    Args:
+     json (dict): the JSON body from the REST call
+    """
+    def __init__(self, json):
+        self.json = json
+        self._settings = None
+        self._iperf = None
+        return
+
+    @abstractmethod
+    def settings_definition(self):
+        """class definition to validate the settings"""
+        return  # pragma: no cover
+
+    @abstractmethod
+    def iperf_definition(self):
+        """The client or the server definition"""
+        return  # pragma: no cover
+        
+    @property
+    def settings(self):
+        """Settings validator/setter
+
+        Raises:
+         ValidationError: self.json had invalid values
+        """
+        if self._settings is None:
+            self._settings = self.settings_definition(self.json)
+            self._settings.validate()
+        return self._settings
+    
+    @property
+    def iperf(self):
+        """The iperf object to run
+
+        Raises:
+         ValidationError: self.json had invalid values
+        """
+        if self._iperf is None:
+            self._iperf = self.iperf_definition()
+            self.settings(self._iperf)
+        return self._iperf
+
+    def __call__(self):
+        """runs the iperf object
+
+        Returns:
+         dict: The JSON output of the iperf session
+        """
+        return self.iperf.run().json

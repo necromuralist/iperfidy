@@ -30,6 +30,7 @@ def make_celery(application):
     celery.Task = ContextTask
     return celery
 
+
 class CeleryStates:
     """Names for job-states"""
     failure = "FAILURE"
