@@ -169,8 +169,10 @@ def test_call():
 
 @when("the child is called")
 def call_child(context, mock):
-    context.expected_output = mock.MagicMock()
-    context.iperf.run.return_value = context.expected_output
+    context.expected_output = {}
+    context.result = mock.MagicMock()
+    context.result.json = context.expected_output
+    context.iperf.run.return_value = context.result
     context.output = context.child()
     return
 

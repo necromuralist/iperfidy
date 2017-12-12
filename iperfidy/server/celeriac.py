@@ -35,4 +35,6 @@ class CeleryStates:
     """Names for job-states"""
     failure = "FAILURE"
     non_existent = "NON-EXISTENT"
-    started = "STARTED"
+    running = "STARTED"
+    pending = "PENDING"
+    finished = "SUCCESS"

@@ -25,6 +25,8 @@ class ServerKeys:
     message = "message"
     state = "state"
     ready = "ready"
+    uuid = "uuid"
+    result = "result"
 
 application = connexion.FlaskApp(__name__)
 app = application.create_app()
@@ -59,6 +61,7 @@ def queue_server(server_settings):
      server_settings (dict): any server settings
     """
     job = start_server.delay(parameters=server_settings)
+    redis.set(job.id, 1)
     return {"location": "/server/{}".format(job.id)}, HTTPStatus.ACCEPTED
 
 
@@ -68,19 +71,21 @@ def get_server_state(uuid):
     Args:
      uuid (str): identifier for the server job
     """
-    if not redis.exists("celery-task-meta-{}".format(uuid).encode("utf-8")):
-        response = {ServerKeys.message: "Unknown job: {}".format(uuid),
-                    ServerKeys.state: CeleryStates.non_existent}, HTTPStatus.NOT_FOUND
-    else:
-        thing = start_server.AsyncResult(uuid)
-        if thing.state != CeleryStates.failure:
-            response = ({ServerKeys.message: "Job Found: {}".format(uuid),
-                         ServerKeys.state: thing.state,
-                         ServerKeys.ready: thing.ready()})
-        else:
-            response = ({ServerKeys.message: "Job failed: {}".format(uuid),
-                        ServerKeys.state: thing.state}, HTTPStatus.BAD_REQUEST)
-    return response
+    job = start_server.AsyncResult(uuid)
+    state = job.state
+    status = HTTPStatus.OK
+
+    if state == CeleryStates.pending and not redis.exists(uuid.encode("utf-8")):
+        state = CeleryStates.non_existent
+        status = HTTPStatus.NOT_FOUND
+    elif state == CeleryStates.failure:
+        status = HTTPStatus.BAD_REQUEST
+        
+    response = {ServerKeys.uuid: uuid,
+                ServerKeys.state: state,
+                ServerKeys.ready: job.ready(),
+                ServerKeys.result: job.result}
+    return response, status
 
 # this has to come after the functions because they are referenced in
 # the swagger file

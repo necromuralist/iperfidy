@@ -8,6 +8,7 @@ from expects import (
     expect,
     raise_error,
 )
+from iperf3 import Server
 from pytest_bdd import (
     given,
     then,
@@ -23,6 +24,7 @@ from ..fixtures import context
 from iperfidy.base import InvalidSettings
 from iperfidy.server.settings import (
     ServerSettings,
+    ServerSettingsAttributes,
     ServerSettingsKeys,
 )
 
@@ -76,8 +78,8 @@ def a_server_settings_with_invalid_json(context, faker):
     return
 
 
-@when('the invalid JSON is validate')
-def the_invalid_json_is_validate(context):
+@when('the invalid JSON is validated')
+def the_invalid_json_is_validated(context):
     def bad_validation():
         context.settings.validate()
     context.validate = bad_validation
@@ -121,3 +123,21 @@ def check_settings_on_iperf_object(context):
     expect(context.server.port).to(equal(context.port))
     expect(context.server.verbose).to(equal(context.verbose))
     return
+
+# ******************** empty settings ******************** #
+@scenario("An iperf object is passed to partial settings")
+def test_empty_value():
+    return
+
+
+@given("a Server Settings with an empty bind-address")
+def set_missing_bind(context, faker):
+    context.port = faker.pyint()
+    context.verbose = faker.pybool()
+    context.settings = ServerSettings({ServerSettingsKeys.bind_address: "",
+                                       ServerSettingsKeys.port: context.port,
+                                       ServerSettingsKeys.verbose: context.verbose})
+    return
+
+#  When the invalid JSON is validated
+#  Then it raises an InvalidServerSettings error

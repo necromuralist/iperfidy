@@ -35,6 +35,11 @@ paths:
       x-swagger-router-controller: "iperfidy.server.api"
 
   /server:
+    get:
+      tags:
+        - "Server"
+      summary:
+        
     post:
       tags:
         - "Server"
@@ -84,11 +89,13 @@ definitions:
   ServerSettings:
     type: object
     properties:
-      bind: 
+      bind:
+        description: "Address of the interface to bind to"
         type: string
+        example: "10.10.1.1"
+        default: "*"
       port:
         type: integer
         default: 5201
       verbose:
         type: boolean
-        

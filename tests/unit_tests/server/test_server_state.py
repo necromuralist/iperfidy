@@ -7,6 +7,7 @@ import json
 
 # from pypi
 from expects import (
+    be_false,
     equal,
     expect,
     have_key,
@@ -31,7 +32,16 @@ and_also = then
 scenario = partial(pytest_bdd.scenario,
                    '../../features/server/server_state.feature')
 
+def setup_mock_celery(context, mock):
+    context.start_server_mock = mock.MagicMock(name="start_server_mock")
+    mock.patch("iperfidy.server.api.start_server", context.start_server_mock)
+    context.mock_job = mock.MagicMock(name="Mock Job")
+    context.start_server_mock.AsyncResult.return_value = context.mock_job
 
+    redis = mock_redis_client()
+    mock.patch("iperfidy.server.api.redis", redis)
+    return
+    
 # ******************** not running server ******************** #
 @scenario("User checks on the server and the job doesn't exist")
 def test_user_checks_on_the_server_while_it_isnt_running():
@@ -46,9 +56,13 @@ def a_flask_testclient(context):
 
 @when("the user checks on the server with a bad UUID")
 def the_user_checks_on_the_server_and_it_isnt_running(context, mock, faker):
-    redis_client = mock_redis_client()
-    mock.patch("iperfidy.server.api.redis", redis_client)
-    context.response = context.client.get("/server/{}".format(faker.word()))
+    context.result = None
+    setup_mock_celery(context, mock)
+    context.mock_job.ready.return_value = False
+    context.mock_job.result = context.result
+    context.mock_job.state = CeleryStates.pending
+    context.uuid = faker.uuid4()
+    context.response = context.client.get("/server/{}".format(context.uuid))
     context.data = json.loads(context.response.data)
     context.state = CeleryStates.non_existent
     return
@@ -58,10 +72,20 @@ def the_response_is_okay(context):
     expect(context.response.status_code).to(equal(HTTPStatus.NOT_FOUND))
     return
 
+@and_also("it has the expected uuid")
+def check_uuid(context):
+    expect(context.data["uuid"]).to(equal(context.uuid))
+    return
 
-@and_also('it has the expected message')
+@and_also("it has the expected ready state")
+def check_ready(context):
+    expect(context.data["ready"]).to(be_false)
+    return
+
+
+@and_also('it has the expected result')
 def it_has_the_expected_message(context):
-    expect(context.data).to(have_key("message"))
+    expect(context.data["result"]).to(equal(context.result))
     return
 
 # ******************** Failed Job ******************** #
@@ -78,17 +102,12 @@ def test_failed_job():
 def check_failed_job(context, mock, faker):
     context.uuid = faker.uuid4()
     context.state = CeleryStates.failure
+    context.result = None
 
-    mock_redis = mock_redis_client()
-    mock_redis.set("celery-task-meta-{}".format(context.uuid), faker.word())
-
-    thing_mock = mock.MagicMock()
-    thing_mock.state = context.state
-
-    start_server_mock = mock.MagicMock()
-    start_server_mock.AsyncResult.return_value = thing_mock
-    mock.patch("iperfidy.server.api.redis", mock_redis)
-    mock.patch("iperfidy.server.api.start_server", start_server_mock)
+    setup_mock_celery(context, mock)
+    context.mock_job.ready.return_value = False
+    context.mock_job.result = context.result
+    context.mock_job.state = context.state
 
     context.response = context.client.get("/server/{}".format(context.uuid))
     context.data = json.loads(context.response.data)
@@ -120,18 +139,13 @@ def test_okay_job():
 @when("the user checks on a running or completed job")
 def check_okay_job(context, mock, faker):
     context.uuid = faker.uuid4()
-    context.state = CeleryStates.started
+    context.state = CeleryStates.running
+    context.result = {"some": "thing"}
+    setup_mock_celery(context, mock)
 
-    mock_redis = mock_redis_client()
-    mock_redis.set("celery-task-meta-{}".format(context.uuid), faker.word())
-
-    thing_mock = mock.MagicMock()
-    thing_mock.state = context.state
-
-    start_server_mock = mock.MagicMock()
-    start_server_mock.AsyncResult.return_value = thing_mock
-    mock.patch("iperfidy.server.api.redis", mock_redis)
-    mock.patch("iperfidy.server.api.start_server", start_server_mock)
+    context.mock_job.state = context.state
+    context.mock_job.ready.return_value = False
+    context.mock_job.result = context.result
 
     context.response = context.client.get("/server/{}".format(context.uuid))
     context.data = json.loads(context.response.data)

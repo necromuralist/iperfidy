@@ -7,7 +7,7 @@ Scenario: A valid JSON settings is validated
 
 Scenario: An invalid JSON settings is validated
   Given a Server Settings with invalid JSON
-  When the invalid JSON is validate
+  When the invalid JSON is validated
   Then it raises an InvalidServerSettings error
 
 Scenario: An iperf object is passed to the settings
@@ -15,3 +15,8 @@ Scenario: An iperf object is passed to the settings
   When the Settings object is passed an iperf object
   Then it validates the settings
   And transfers the settings to the iperf object
+
+Scenario: An iperf object is passed to partial settings
+  Given a Server Settings with an empty bind-address
+  When the invalid JSON is validated
+  Then it raises an InvalidServerSettings error

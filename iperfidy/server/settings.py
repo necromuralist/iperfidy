@@ -1,9 +1,10 @@
 """Settings for the server"""
 # from pypi
 from voluptuous import (
+    All,
+    Length,
     Schema,
     )
-import voluptuous
 
 # this project
 from iperfidy.base import BaseSettings
@@ -43,7 +44,7 @@ class ServerSettings(BaseSettings):
         if self._schema is None:
             self._schema = Schema(
                 {
-                    ServerSettingsKeys.bind_address: str,
+                    ServerSettingsKeys.bind_address: All(str, Length(min=1)),
                     ServerSettingsKeys.port: int,
                     ServerSettingsKeys.verbose: bool,
                 })
