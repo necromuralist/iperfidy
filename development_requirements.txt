@@ -8,7 +8,7 @@ Faker==0.8.7
 glob2==0.6
 iperf3==0.1.7
 -e git+git@github.com:necromuralist/iperfidy.git@15038bf597bd001def3567cce8c4d6f0f7941b88#egg=iperfidy
-ipython==6.2.1
+ipython==7.16.3
 ipython-genutils==0.2.0
 jedi==0.11.0
 Mako==1.0.7
