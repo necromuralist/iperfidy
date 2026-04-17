@@ -24,7 +24,7 @@ ptpython==0.41
 ptyprocess==0.5.2
 py==1.10.0
 Pygments==2.20.0
-pytest==3.3.0
+pytest==9.0.3
 pytest-bdd==2.19.0
 pytest-faker==2.0.0
 pytest-forked==0.2
